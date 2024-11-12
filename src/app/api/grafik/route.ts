@@ -8,8 +8,8 @@ function generateTimeSlots(
 	startTime: string,
 	endTime: string,
 	interval: number
-) {
-	const timeSlots = []
+): string[] {
+	const timeSlots: string[] = []
 	let currentTime = new Date()
 	currentTime.setHours(parseInt(startTime.split(':')[0]))
 	currentTime.setMinutes(parseInt(startTime.split(':')[1]))
@@ -47,7 +47,9 @@ export async function POST(req: Request) {
 		})
 
 		// Проверяем, какие дни уже существуют
-		const existingDays = existingTimeSlots.map(slot => slot.dayOfWeek)
+		const existingDays = existingTimeSlots.map(
+			(slot: { dayOfWeek: any }) => slot.dayOfWeek
+		)
 
 		// Вычисляем новые дни недели, для которых создаем слоты
 		const newDaysOfWeek = daysOfWeek.filter(
