@@ -9,10 +9,10 @@ const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
 })
 
 const botUsername = 'naznach_twa_bot'
-const webAppUrl = 'https://3afa-178-167-76-68.ngrok-free.app'
+const webAppUrl = 'naznach.vercel.app'
 
 // Устанавливаем вебхук на этот маршрут
-bot.setWebHook(`https://3afa-178-167-76-68.ngrok-free.app/api/bot`)
+bot.setWebHook(`naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
 bot.on('message', async msg => {
