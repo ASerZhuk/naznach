@@ -13,6 +13,12 @@ const bot = new TelegramBot(TOKEN);
 const botUsername = 'naznach_twa_bot';
 const webAppUrl = 'https://naznach.vercel.app';
 
+// Пример обработки команды /start
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Привет! Я бот, и я работаю!');
+});
+
 // Функция для регистрации нового пользователя
 async function registerUser(chatId, msg) {
     return await prisma.user.create({
