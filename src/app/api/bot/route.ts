@@ -7,9 +7,6 @@ const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g')
 const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
 
-// Устанавливаем вебхук на этот маршрут
-bot.setWebHook(`https://naznach.vercel.app/api/bot`)
-
 // Основная логика обработки сообщений
 bot.onText(/\/start/, async msg => {
 	const chatId = msg.chat.id
