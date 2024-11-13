@@ -17,7 +17,17 @@ bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 // Основная логика обработки сообщений
 bot.onText(/\/start/, async msg => {
 	const chatId = msg.chat.id
-	bot.sendMessage(chatId, 'dfdfdf')
+	const text = msg.text || ''
+	const startPayload = text.split(' ')[1]
+
+	const id = chatId.toString()
+
+	let user = await prisma.user.findUnique({
+		where: { telegramId: id },
+	})
+	if (user) {
+		bot.sendMessage(chatId, 'Вы зарегистрированы')
+	} else bot.sendMessage(chatId, 'Вы не зарегестрированы')
 })
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
