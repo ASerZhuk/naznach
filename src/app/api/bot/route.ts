@@ -124,10 +124,3 @@ bot.on('callback_query', async callbackQuery => {
 		}
 	}
 })
-
-export async function POST(req: Request) {
-	// Получаем обновления из запроса вебхука
-	const body = await req.json()
-	bot.processUpdate(body)
-	return NextResponse.json({ status: 'ok' })
-}
