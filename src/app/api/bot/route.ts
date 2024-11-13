@@ -14,6 +14,11 @@ const webAppUrl = 'https://naznach.vercel.app'
 // Устанавливаем вебхук на этот маршрут
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
+bot.onText(/\/start/, msg => {
+	const chatId = msg.chat.id
+	bot.sendMessage(chatId, 'ghbdtn')
+})
+
 // Основная логика обработки сообщений
 bot.on('message', async msg => {
 	const chatId = msg.chat.id.toString()
@@ -71,53 +76,53 @@ bot.on('message', async msg => {
 	}
 
 	// Если пользователь существует и команда /start без параметра, показываем сообщение о регистрации
-	if (text === '/start') {
-		if (user) {
-			const button = {
-				reply_markup: {
-					inline_keyboard: [
-						[
-							{
-								text: 'Перейти в приложение',
-								web_app: { url: `${webAppUrl}` },
-							},
-						],
-					],
-				},
-			}
-
-			bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
-			return
-		}
-		// Если пользователя нет, создаём его и предлагаем выбрать тип профиля
-		user = await prisma.user.create({
-			data: {
-				telegramId: chatId,
-				firstName: msg.from?.first_name || '',
-				lastName: msg.from?.last_name || '',
-				chatId: chatId.toString(),
-				username: msg.from?.username || '',
-			},
-		})
-		// Приветственное сообщение с выбором типа профиля
-		const options = {
+	if (user) {
+		const button = {
 			reply_markup: {
 				inline_keyboard: [
 					[
-						{ text: 'Клиент', callback_data: 'client' },
-						{ text: 'Специалист', callback_data: 'specialist' },
+						{
+							text: 'Перейти в приложение',
+							web_app: { url: `${webAppUrl}` },
+						},
 					],
 				],
 			},
 		}
 
-		const photoWelcome = `${webAppUrl}/11.png`
-
-		bot.sendPhoto(chatId, photoWelcome, {
-			caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
-			reply_markup: options.reply_markup,
-		})
+		bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
+		return
 	}
+
+	// Если пользователя нет, создаём его и предлагаем выбрать тип профиля
+	user = await prisma.user.create({
+		data: {
+			telegramId: chatId,
+			firstName: msg.from?.first_name || '',
+			lastName: msg.from?.last_name || '',
+			chatId: chatId.toString(),
+			username: msg.from?.username || '',
+		},
+	})
+
+	// Приветственное сообщение с выбором типа профиля
+	const options = {
+		reply_markup: {
+			inline_keyboard: [
+				[
+					{ text: 'Клиент', callback_data: 'client' },
+					{ text: 'Специалист', callback_data: 'specialist' },
+				],
+			],
+		},
+	}
+
+	const photoWelcome = `${webAppUrl}/11.png`
+
+	bot.sendPhoto(chatId, photoWelcome, {
+		caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
+		reply_markup: options.reply_markup,
+	})
 })
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
