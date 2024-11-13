@@ -4,9 +4,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
-	polling: false,
-})
+const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g')
 
 const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
@@ -22,7 +20,7 @@ bot.onText(/\/start/, async msg => {
 
 	const id = chatId.toString()
 
-	let user = await prisma.user.findUnique({
+	const user = await prisma.user.findUnique({
 		where: { telegramId: id },
 	})
 	if (user) {
