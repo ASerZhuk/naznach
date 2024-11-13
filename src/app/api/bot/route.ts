@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import TelegramBot from 'node-telegram-bot-api'
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+
 
 const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
 	polling: false,
@@ -17,6 +17,7 @@ bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 // Основная логика обработки сообщений
 // Основная логика обработки сообщений
 bot.on('message', async msg => {
+	const prisma = new PrismaClient()
 	const chatId = msg.chat.id.toString();
 	const text = msg.text || '';
 	const startPayload = text.split(' ')[1];
