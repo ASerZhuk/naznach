@@ -12,7 +12,7 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN)
 
-bot.getWebhookInfo().then(info => {
+bot.getWebHookInfo().then(info => {
     console.log('Webhook Info:', info);
 });
 
