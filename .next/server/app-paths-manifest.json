@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/appointments/route": "app/api/appointments/route.js",
+  "/api/bot/route": "app/api/bot/route.js",
+  "/api/getSpecialist/route": "app/api/getSpecialist/route.js",
+  "/api/getUser/route": "app/api/getUser/route.js",
+  "/api/grafik/route": "app/api/grafik/route.js",
+  "/api/profile/route": "app/api/profile/route.js",
+  "/api/updateStatus/route": "app/api/updateStatus/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/formSpecialist/[userId]/page": "app/formSpecialist/[userId]/page.js",
+  "/grafik/[userId]/page": "app/grafik/[userId]/page.js",
+  "/my_booking/[specialistId]/page": "app/my_booking/[specialistId]/page.js",
+  "/my_list/[telegramId]/page": "app/my_list/[telegramId]/page.js",
+  "/my_specialist/[telegramId]/page": "app/my_specialist/[telegramId]/page.js",
+  "/page": "app/page.js",
+  "/perezapis/[id]/page": "app/perezapis/[id]/page.js",
+  "/profile/[userId]/page": "app/profile/[userId]/page.js",
+  "/profile_zapis/[userId]/page": "app/profile_zapis/[userId]/page.js",
+  "/zapis/[userId]/page": "app/zapis/[userId]/page.js"
+}
