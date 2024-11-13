@@ -22,7 +22,7 @@ bot.on('message', async msg => {
 	const startPayload = text.split(' ')[1];
 
 	// Проверяем, является ли текст сообщения /start или /start с параметром
-	if (text === '/start' || (text.startsWith('/start ') && startPayload)) {
+	if (text === '/start') {
 		// Проверяем, есть ли пользователь в базе данных
 		let user = await prisma.user.findUnique({
 			where: { telegramId: chatId },
