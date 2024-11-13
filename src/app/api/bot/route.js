@@ -1,225 +1,195 @@
 const { NextResponse } = require('next/server');
 const { PrismaClient } = require('@prisma/client');
-const TelegramBot = require('node-telegram-bot-api')
-const prisma = new PrismaClient()
+const TelegramBot = require('node-telegram-bot-api');
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const prisma = new PrismaClient();
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 if (!TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not defined. Please set it in the environment variables.");
 }
 
-const bot = new TelegramBot(TOKEN)
+const bot = new TelegramBot(TOKEN);
+const botUsername = 'naznach_twa_bot';
+const webAppUrl = 'https://naznach.vercel.app';
 
-bot.getWebHookInfo().then(info => {
-    console.log('Webhook Info:', info);
-});
+// Функция для регистрации нового пользователя
+async function registerUser(chatId, msg) {
+    return await prisma.user.create({
+        data: {
+            telegramId: chatId,
+            firstName: msg.from?.first_name || '',
+            lastName: msg.from?.last_name || '',
+            chatId: chatId.toString(),
+            username: msg.from?.username || '',
+        },
+    });
+}
 
-const botUsername = 'naznach_twa_bot'
-const webAppUrl = 'https://naznach.vercel.app'
+// Функция для отправки приветственного сообщения
+async function sendWelcomeMessage(chatId) {
+    const options = {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: 'Клиент', callback_data: 'client' },
+                    { text: 'Специалист', callback_data: 'specialist' },
+                ],
+            ],
+        },
+    };
+    const photoWelcome = `${webAppUrl}/11.png`;
+    await bot.sendPhoto(chatId, photoWelcome, {
+        caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
+        reply_markup: options.reply_markup,
+    });
+}
 
 // Основная логика обработки сообщений
-bot.on('message', async msg => {
-	console.log('Received message:', msg);
-	const chatId = msg.chat.id.toString()
-	const text = msg.text || ''
-	const startPayload = text.split(' ')[1]
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id.toString();
+    const text = msg.text || '';
+    const startPayload = text.split(' ')[1];
 
-	// Проверяем, есть ли пользователь в базе данных
-	let user = await prisma.user.findUnique({
-		where: { telegramId: chatId },
-	})
+    let user = await prisma.user.findUnique({
+        where: { telegramId: chatId },
+    });
 
-	// Если параметр существует и пользователя нет, создаём пользователя и предлагаем записаться
-	if (startPayload) {
-		let master = await prisma.specialist.findUnique({
-			where: { userId: startPayload },
-		})
-		if (!user) {
-			// Создание нового пользователя
-			user = await prisma.user.create({
-				data: {
-					telegramId: chatId,
-					firstName: msg.from?.first_name || '',
-					lastName: msg.from?.last_name || '',
-					chatId: chatId.toString(),
-					username: msg.from?.username || '',
-				},
-			})
+    if (startPayload) {
+        if (!user) {
+            user = await registerUser(chatId, msg);
+        }
 
-			//bot.sendMessage(chatId, 'Добро пожаловать! Вы зарегистрированы.')
-		}
+        const master = await prisma.specialist.findUnique({
+            where: { userId: startPayload },
+        });
 
-		// Отправляем кнопку для записи к мастеру
-		const button = {
-			reply_markup: {
-				inline_keyboard: [
-					[
-						{
-							text: `Записаться к мастеру`,
-							web_app: { url: `${webAppUrl}/profile_zapis/${startPayload}` }, // Ссылка на профиль мастера
-						},
-					],
-				],
-			},
-		}
+        const button = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: `Записаться к мастеру`,
+                            web_app: { url: `${webAppUrl}/profile_zapis/${startPayload}` },
+                        },
+                    ],
+                ],
+            },
+        };
 
-		bot.sendMessage(
-			chatId,
-			`Записаться к мастеру <b>${master?.firstName} ${master?.lastName}</b>`,
-			{
-				reply_markup: button.reply_markup,
-				parse_mode: 'HTML',
-			}
-		)
-		return
-	}
+        await bot.sendMessage(
+            chatId,
+            `Записаться к мастеру <b>${master?.firstName} ${master?.lastName}</b>`,
+            {
+                reply_markup: button.reply_markup,
+                parse_mode: 'HTML',
+            }
+        );
+        return;
+    }
 
-	// Если пользователь существует и команда /start без параметра, показываем сообщение о регистрации
-	if (user) {
-		const button = {
-			reply_markup: {
-				inline_keyboard: [
-					[
-						{
-							text: 'Перейти в приложение',
-							web_app: { url: `${webAppUrl}` },
-						},
-					],
-				],
-			},
-		}
-
-		bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
-		return
-	}
-
-	// Если пользователя нет, создаём его и предлагаем выбрать тип профиля
-	user = await prisma.user.create({
-		data: {
-			telegramId: chatId,
-			firstName: msg.from?.first_name || '',
-			lastName: msg.from?.last_name || '',
-			chatId: chatId.toString(),
-			username: msg.from?.username || '',
-		},
-	})
-
-	// Приветственное сообщение с выбором типа профиля
-	const options = {
-		reply_markup: {
-			inline_keyboard: [
-				[
-					{ text: 'Клиент', callback_data: 'client' },
-					{ text: 'Специалист', callback_data: 'specialist' },
-				],
-			],
-		},
-	}
-
-	const photoWelcome = `${webAppUrl}/11.png`
-
-	bot.sendPhoto(chatId, photoWelcome, {
-		caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
-		reply_markup: options.reply_markup,
-	})
-})
+    if (user) {
+        const button = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: 'Перейти в приложение',
+                            web_app: { url: `${webAppUrl}` },
+                        },
+                    ],
+                ],
+            },
+        };
+        await bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button);
+    } else {
+        user = await registerUser(chatId, msg);
+        await sendWelcomeMessage(chatId);
+    }
+});
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
-bot.on('callback_query', async callbackQuery => {
-	const chatId = callbackQuery.message?.chat.id
-	const telegramId = callbackQuery.from.id.toString()
+bot.on('callback_query', async (callbackQuery) => {
+    const chatId = callbackQuery.message?.chat.id;
+    const telegramId = callbackQuery.from.id.toString();
 
-	if (!chatId) return
+    if (!chatId) return;
 
-	const user = await prisma.user.findUnique({
-		where: { telegramId: telegramId },
-	})
+    const user = await prisma.user.findUnique({
+        where: { telegramId: telegramId },
+    });
 
-	if (!user) {
-		bot.sendMessage(
-			chatId,
-			'Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.'
-		)
-		return
-	}
+    if (!user) {
+        await bot.sendMessage(chatId, 'Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.');
+        return;
+    }
 
-	// Обработка выбора профиля "Клиент"
-	if (callbackQuery.data === 'client') {
-		const profileOptions = {
-			reply_markup: {
-				inline_keyboard: [
-					[
-						{
-							text: 'Перейти в приложение',
-							web_app: { url: `${webAppUrl}` },
-						},
-					],
-				],
-			},
-		}
-		const photoProfile = `${webAppUrl}/33.png`
-		bot.sendPhoto(chatId, photoProfile, {
-			caption: 'Вы выбрали профиль клиента.',
-			reply_markup: profileOptions.reply_markup,
-		})
-	}
+    if (callbackQuery.data === 'client') {
+        const profileOptions = {
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        {
+                            text: 'Перейти в приложение',
+                            web_app: { url: `${webAppUrl}` },
+                        },
+                    ],
+                ],
+            },
+        };
+        const photoProfile = `${webAppUrl}/33.png`;
+        await bot.sendPhoto(chatId, photoProfile, {
+            caption: 'Вы выбрали профиль клиента.',
+            reply_markup: profileOptions.reply_markup,
+        });
+    } else if (callbackQuery.data === 'specialist') {
+        try {
+            await prisma.user.update({
+                where: { telegramId: telegramId },
+                data: { isMaster: true },
+            });
 
-	// Обработка выбора профиля "Специалист"
-	if (callbackQuery.data === 'specialist') {
-		try {
-			// Обновляем пользователя как специалиста
-			await prisma.user.update({
-				where: { telegramId: telegramId },
-				data: {
-					isMaster: true, // Обновляем статус isMaster
-				},
-			})
+            await prisma.specialist.create({
+                                data: {
+                    userId: user.telegramId,
+                    chatId: chatId.toString(),
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    username: user.username,
+                    isMaster: true,
+                },
+            });
 
-			// Создаем запись в таблице специалистов
-			await prisma.specialist.create({
-				data: {
-					userId: user.telegramId,
-					chatId: chatId.toString(),
-					firstName: user.firstName,
-					lastName: user.lastName,
-					username: user.username,
-					isMaster: true,
-				},
-			})
+            const profileOptions = {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: 'Перейти в приложение',
+                                web_app: { url: `${webAppUrl}` },
+                            },
+                        ],
+                    ],
+                },
+            };
 
-			const profileOptions = {
-				reply_markup: {
-					inline_keyboard: [
-						[
-							{
-								text: 'Перейти в приложение',
-								web_app: { url: `${webAppUrl}` },
-							},
-						],
-					],
-				},
-			}
+            const photoProfile = `${webAppUrl}/22.png`;
+            await bot.sendPhoto(chatId, photoProfile, {
+                caption: `Вы специалист. Вот ваша уникальная ссылка для записи: https://t.me/${botUsername}?start=${chatId}`,
+                reply_markup: profileOptions.reply_markup,
+            });
+        } catch (error) {
+            console.error('Ошибка при регистрации специалиста:', error);
+            await bot.sendMessage(chatId, 'Произошла ошибка при регистрации. Попробуйте еще раз.');
+        }
+    }
+});
 
-			const photoProfile = `${webAppUrl}/22.png`
-
-			bot.sendPhoto(chatId, photoProfile, {
-				caption: `Вы специалист. Вот ваша уникальная ссылка для записи: https://t.me/${botUsername}?start=${chatId} `,
-				reply_markup: profileOptions.reply_markup,
-			})
-		} catch (error) {
-			console.error('Ошибка при регистрации специалиста:', error)
-			bot.sendMessage(
-				chatId,
-				'Произошла ошибка при регистрации. Попробуйте еще раз.'
-			)
-		}
-	}
-})
-
-export async function POST(req) {
-	// Получаем обновления из запроса вебхука
-	const body = await req.json()
-	bot.processUpdate(body)
-	return NextResponse.json({ status: 'ok' })
+// Обработка POST-запроса для вебхука
+async function POST(req) {
+    const body = await req.json();
+    bot.processUpdate(body);
+    return NextResponse.json({ status: 'ok' });
 }
+
+module.exports = { POST };
