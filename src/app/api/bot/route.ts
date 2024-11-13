@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const bot = new TelegramBot('YOUR_BOT_TOKEN', {
+const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
 	polling: false,
 })
 
@@ -134,42 +134,89 @@ bot.on('callback_query', async callbackQuery => {
 
 	const user = await prisma.user.findUnique({
 		where: { telegramId: telegramId },
-			})
+	})
 
 	if (!user) {
-		bot.sendMessage(chatId, 'Сначала зарегистрируйтесь, используя команду /start.')
+		bot.sendMessage(
+			chatId,
+			'Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.'
+		)
 		return
 	}
 
+	// Обработка выбора профиля "Клиент"
 	if (callbackQuery.data === 'client') {
-		// Логика для клиента
-		await prisma.user.update({
-			where: { telegramId: telegramId },
-			data: { role: 'client' },
-		})
-
-		const photoClient = `${webAppUrl}/client.png`
-		bot.sendPhoto(chatId, photoClient, {
-			caption: 'Вы выбрали роль клиента. Теперь вы можете записаться на услуги.',
-		})
-	} else if (callbackQuery.data === 'specialist') {
-		// Логика для специалиста
-		await prisma.user.update({
-			where: { telegramId: telegramId },
-			data: { role: 'specialist' },
-		})
-
-		const photoSpecialist = `${webAppUrl}/specialist.png`
-		bot.sendPhoto(chatId, photoSpecialist, {
-			caption: 'Вы выбрали роль специалиста. Пожалуйста, заполните ваш профиль.',
+		const profileOptions = {
+			reply_markup: {
+				inline_keyboard: [
+					[
+						{
+							text: 'Перейти в приложение',
+							web_app: { url: `${webAppUrl}` },
+						},
+					],
+				],
+			},
+		}
+		const photoProfile = `${webAppUrl}/33.png`
+		bot.sendPhoto(chatId, photoProfile, {
+			caption: 'Вы выбрали профиль клиента.',
+			reply_markup: profileOptions.reply_markup,
 		})
 	}
 
-	// Удаляем сообщение с кнопками после выбора
-	bot.deleteMessage(chatId, callbackQuery.message.message_id.toString())
+	// Обработка выбора профиля "Специалист"
+	if (callbackQuery.data === 'specialist') {
+		try {
+			// Обновляем пользователя как специалиста
+			await prisma.user.update({
+				where: { telegramId: telegramId },
+				data: {
+					isMaster: true, // Обновляем статус isMaster
+				},
+			})
+
+			// Создаем запись в таблице специалистов
+			await prisma.specialist.create({
+				data: {
+					userId: user.telegramId,
+					chatId: chatId.toString(),
+					firstName: user.firstName,
+					lastName: user.lastName,
+					username: user.username,
+					isMaster: true,
+				},
+			})
+
+			const profileOptions = {
+				reply_markup: {
+					inline_keyboard: [
+						[
+							{
+								text: 'Перейти в приложение',
+								web_app: { url: `${webAppUrl}` },
+							},
+						],
+					],
+				},
+			}
+
+			const photoProfile = `${webAppUrl}/22.png`
+
+			bot.sendPhoto(chatId, photoProfile, {
+				caption: `Вы специалист. Вот ваша уникальная ссылка для записи: https://t.me/${botUsername}?start=${chatId} `,
+				reply_markup: profileOptions.reply_markup,
+			})
+		} catch (error) {
+			console.error('Ошибка при регистрации специалиста:', error)
+			bot.sendMessage(
+				chatId,
+				'Произошла ошибка при регистрации. Попробуйте еще раз.'
+			)
+		}
+	}
 })
 
-// Обработка POST-запросов для вебхука
 export async function POST(req: Request) {
 	// Получаем обновления из запроса вебхука
 	const body = await req.json()
