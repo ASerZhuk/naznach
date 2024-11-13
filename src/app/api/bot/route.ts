@@ -128,6 +128,7 @@ bot.on('message', async msg => {
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
 bot.on('callback_query', async callbackQuery => {
+	const prisma = new PrismaClient()
 	const chatId = callbackQuery.message?.chat.id
 	const telegramId = callbackQuery.from.id.toString()
 
