@@ -4,15 +4,12 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
-	polling: false,
-})
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN
+
+const bot = new TelegramBot(TOKEN)
 
 const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
-
-// Устанавливаем вебхук на этот маршрут
-bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
 bot.on('message', async msg => {
