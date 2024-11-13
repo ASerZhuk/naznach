@@ -14,13 +14,8 @@ const webAppUrl = 'https://naznach.vercel.app'
 // Устанавливаем вебхук на этот маршрут
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
-bot.onText(/\/start/, msg => {
-	const chatId = msg.chat.id
-	bot.sendMessage(chatId, 'ghbdtn')
-})
-
 // Основная логика обработки сообщений
-bot.on('message', async msg => {
+bot.onText(/\/start/, async msg => {
 	const chatId = msg.chat.id.toString()
 	const text = msg.text || ''
 	const startPayload = text.split(' ')[1]
