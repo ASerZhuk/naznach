@@ -83,7 +83,7 @@ bot.on('message', async (msg) => {
  if (text==='/start'){
     const chatId = msg.chat.id
     bot.sendMessage(chatId, 'Привет! Я бот, и я работаю!');
-});
+};
 
     if (!msg.text.startsWith('/start')) {
         return; // Игнорируем сообщения, если они не начинаются с /start
