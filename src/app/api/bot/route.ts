@@ -15,7 +15,7 @@ const webAppUrl = 'https://naznach.vercel.app'
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
-bot.onText(/\/start/, async msg => {
+bot.on('/start', async msg => {
 	const chatId = msg.chat.id.toString()
 	const text = msg.text || ''
 	const startPayload = text.split(' ')[1]
