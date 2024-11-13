@@ -16,16 +16,24 @@ bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 bot.onText(/\/start/, async msg => {
 	const chatId = msg.chat.id
 	const text = msg.text || ''
-	const startPayload = text.split(' ')[1]
+	const startPayload = text.split(' ')[1] || '' // Добавлено значение по умолчанию
 
 	const id = chatId.toString()
 
-	const user = await prisma.user.findUnique({
-		where: { telegramId: id },
-	})
-	if (user) {
-		await bot.sendMessage(chatId, 'Вы зарегистрированы')
-	} else await bot.sendMessage(chatId, 'Вы не зарегестрированы')
+	try {
+		const user = await prisma.user.findUnique({
+			where: { telegramId: id },
+		})
+
+		if (user) {
+			await bot.sendMessage(chatId, 'Вы зарегистрированы')
+		} else {
+			await bot.sendMessage(chatId, 'Вы не зарегистрированы')
+		}
+	} catch (error) {
+		console.error('Ошибка при выполнении команды /start:', error)
+		await bot.sendMessage(chatId, 'Произошла ошибка. Попробуйте еще раз.')
+	}
 })
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
