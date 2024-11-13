@@ -12,11 +12,16 @@ if (!TOKEN) {
 
 const bot = new TelegramBot(TOKEN)
 
+bot.getWebhookInfo().then(info => {
+    console.log('Webhook Info:', info);
+});
+
 const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
 
 // Основная логика обработки сообщений
 bot.on('message', async (msg: Message) => {
+	console.log('Received message:', msg);
 	const chatId = msg.chat.id.toString()
 	const text = msg.text || ''
 	const startPayload = text.split(' ')[1]
