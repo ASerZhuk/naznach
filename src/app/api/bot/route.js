@@ -217,7 +217,7 @@ bot.on('callback_query', async callbackQuery => {
 	}
 })
 
-export async function POST(req: Request) {
+export async function POST(req) {
 	// Получаем обновления из запроса вебхука
 	const body = await req.json()
 	bot.processUpdate(body)
