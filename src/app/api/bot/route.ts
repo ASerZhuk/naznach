@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import TelegramBot from 'node-telegram-bot-api'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
+
+const TelegramBot = require('node-telegram-bot-api')
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
