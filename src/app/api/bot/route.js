@@ -45,50 +45,17 @@ async function sendWelcomeMessage(chatId) {
     });
 }
 
-// Основная логика обработки сообщений
-bot.on('message', async (msg) => {
+// Обработка команды /start
+bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id.toString();
-    const text = msg.text || '';
-    const startPayload = text.split(' ')[1];
-
     let user = await prisma.user.findUnique({
         where: { telegramId: chatId },
     });
 
-    if (startPayload) {
-        if (!user) {
-            user = await registerUser(chatId, msg);
-        }
-
-        const master = await prisma.specialist.findUnique({
-            where: { userId: startPayload },
-        });
-
-        const button = {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: `Записаться к мастеру`,
-                            web_app: { url: `${webAppUrl}/profile_zapis/${startPayload}` },
-                        },
-                    ],
-                ],
-            },
-        };
-
-        await bot.sendMessage(
-            chatId,
-            `Записаться к мастеру <b>${master?.firstName} ${master?.lastName}</b>`,
-            {
-                reply_markup: button.reply_markup,
-                parse_mode: 'HTML',
-            }
-        );
-        return;
-    }
-
-    if (user) {
+    if (!user) {
+        user = await registerUser(chatId, msg);
+        await sendWelcomeMessage(chatId);
+    } else {
         const button = {
             reply_markup: {
                 inline_keyboard: [
@@ -102,10 +69,20 @@ bot.on('message', async (msg) => {
             },
         };
         await bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button);
-    } else {
-        user = await registerUser(chatId, msg);
-        await sendWelcomeMessage(chatId);
     }
+});
+
+// Основная логика обработки сообщений
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id.toString();
+    const text = msg.text || '';
+    const startPayload = text.split(' ')[1];
+
+    if (!msg.text.startsWith('/start')) {
+        return; // Игнорируем сообщения, если они не начинаются с /start
+    }
+
+    // Здесь можно добавить логику обработки сообщений, если это необходимо
 });
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
@@ -150,7 +127,7 @@ bot.on('callback_query', async (callbackQuery) => {
             });
 
             await prisma.specialist.create({
-                                data: {
+                data: {
                     userId: user.telegramId,
                     chatId: chatId.toString(),
                     firstName: user.firstName,
