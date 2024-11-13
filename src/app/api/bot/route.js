@@ -80,7 +80,7 @@ bot.on('message', async (msg) => {
     const startPayload = text.split(' ')[1];
 
     // Пример обработки команды /start
- if (text==='/start'{
+ if (text==='/start'){
     const chatId = msg.chat.id
     bot.sendMessage(chatId, 'Привет! Я бот, и я работаю!');
 });
