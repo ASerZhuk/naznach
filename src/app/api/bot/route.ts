@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import TelegramBot from 'node-telegram-bot-api'
 import { PrismaClient } from '@prisma/client'
 
-
+const prisma = new PrismaClient()
 
 const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g', {
 	polling: false,
@@ -15,66 +15,63 @@ const webAppUrl = 'https://naznach.vercel.app'
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
-// Основная логика обработки сообщений
 bot.on('message', async msg => {
-	const prisma = new PrismaClient()
-	const chatId = msg.chat.id.toString();
-	const text = msg.text || '';
-	const startPayload = text.split(' ')[1];
+	const chatId = msg.chat.id.toString()
+	const text = msg.text || ''
+	const startPayload = text.split(' ')[1]
 
-	// Проверяем, является ли текст сообщения /start или /start с параметром
-	if (text === '/start') {
-		// Проверяем, есть ли пользователь в базе данных
-		let user = await prisma.user.findUnique({
-			where: { telegramId: chatId },
-		});
+	// Проверяем, есть ли пользователь в базе данных
+	let user = await prisma.user.findUnique({
+		where: { telegramId: chatId },
+	})
 
-		// Если параметр существует и пользователя нет, создаём пользователя и предлагаем записаться
-		if (startPayload) {
-			let master = await prisma.specialist.findUnique({
-				where: { userId: startPayload },
-			});
-			if (!user) {
-				// Создание нового пользователя
-				user = await prisma.user.create({
-					data: {
-						telegramId: chatId,
-						firstName: msg.from?.first_name || '',
-						lastName: msg.from?.last_name || '',
-						chatId: chatId.toString(),
-						username: msg.from?.username || '',
-					},
-				});
-
-				//bot.sendMessage(chatId, 'Добро пожаловать! Вы зарегистрированы.')
-			}
-
-			// Отправляем кнопку для записи к мастеру
-			const button = {
-				reply_markup: {
-					inline_keyboard: [
-						[
-							{
-								text: `Записаться к мастеру`,
-								web_app: { url: `${webAppUrl}/profile_zapis/${startPayload}` }, // Ссылка на профиль мастера
-							},
-						],
-					],
+	// Если параметр существует и пользователя нет, создаём пользователя и предлагаем записаться
+	if (text === startPayload) {
+		let master = await prisma.specialist.findUnique({
+			where: { userId: startPayload },
+		})
+		if (!user) {
+			// Создание нового пользователя
+			user = await prisma.user.create({
+				data: {
+					telegramId: chatId,
+					firstName: msg.from?.first_name || '',
+					lastName: msg.from?.last_name || '',
+					chatId: chatId.toString(),
+					username: msg.from?.username || '',
 				},
-			};
+			})
 
-			bot.sendMessage(
-				chatId,
-				`Записаться к мастеру <b>${master?.firstName} ${master?.lastName}</b>`,
-				{
-					reply_markup: button.reply_markup,
-					parse_mode: 'HTML',
-				}
-			);
-			return;
+			//bot.sendMessage(chatId, 'Добро пожаловать! Вы зарегистрированы.')
 		}
 
-		// Если пользователь существует и команда /start без параметра, показываем сообщение о регистрации
+		// Отправляем кнопку для записи к мастеру
+		const button = {
+			reply_markup: {
+				inline_keyboard: [
+					[
+						{
+							text: `Записаться к мастеру`,
+							web_app: { url: `${webAppUrl}/profile_zapis/${startPayload}` }, // Ссылка на профиль мастера
+						},
+					],
+				],
+			},
+		}
+
+		bot.sendMessage(
+			chatId,
+			`Записаться к мастеру <b>${master?.firstName} ${master?.lastName}</b>`,
+			{
+				reply_markup: button.reply_markup,
+				parse_mode: 'HTML',
+			}
+		)
+		return
+	}
+
+	// Если пользователь существует и команда /start без параметра, показываем сообщение о регистрации
+	if (text === '/start') {
 		if (user) {
 			const button = {
 				reply_markup: {
@@ -87,12 +84,11 @@ bot.on('message', async msg => {
 						],
 					],
 				},
-			};
+			}
 
-			bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button);
-			return;
+			bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
+			return
 		}
-
 		// Если пользователя нет, создаём его и предлагаем выбрать тип профиля
 		user = await prisma.user.create({
 			data: {
@@ -102,8 +98,7 @@ bot.on('message', async msg => {
 				chatId: chatId.toString(),
 				username: msg.from?.username || '',
 			},
-		});
-
+		})
 		// Приветственное сообщение с выбором типа профиля
 		const options = {
 			reply_markup: {
@@ -114,21 +109,19 @@ bot.on('message', async msg => {
 					],
 				],
 			},
-		};
+		}
 
-		const photoWelcome = `${webAppUrl}/11.png`;
+		const photoWelcome = `${webAppUrl}/11.png`
 
 		bot.sendPhoto(chatId, photoWelcome, {
 			caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
 			reply_markup: options.reply_markup,
-		});
+		})
 	}
-});
-
+})
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
 bot.on('callback_query', async callbackQuery => {
-	const prisma = new PrismaClient()
 	const chatId = callbackQuery.message?.chat.id
 	const telegramId = callbackQuery.from.id.toString()
 
