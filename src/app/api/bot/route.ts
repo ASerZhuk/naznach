@@ -15,23 +15,24 @@ const webAppUrl = 'https://naznach.vercel.app'
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
+// Основная логика обработки сообщений
 bot.on('message', async msg => {
-	const chatId = msg.chat.id.toString()
-	const text = msg.text || ''
-	const startPayload = text.split(' ')[1]; // Извлекаем параметр после /start
+	const chatId = msg.chat.id.toString();
+	const text = msg.text || '';
+	const startPayload = text.split(' ')[1];
 
-	// Проверяем, является ли текст командой /start
-	if (text.startsWith('/start')) {
+	// Проверяем, является ли текст сообщения /start или /start с параметром
+	if (text === '/start' || (text.startsWith('/start ') && startPayload)) {
 		// Проверяем, есть ли пользователь в базе данных
 		let user = await prisma.user.findUnique({
 			where: { telegramId: chatId },
-		})
+		});
 
 		// Если параметр существует и пользователя нет, создаём пользователя и предлагаем записаться
 		if (startPayload) {
 			let master = await prisma.specialist.findUnique({
 				where: { userId: startPayload },
-			})
+			});
 			if (!user) {
 				// Создание нового пользователя
 				user = await prisma.user.create({
@@ -42,7 +43,7 @@ bot.on('message', async msg => {
 						chatId: chatId.toString(),
 						username: msg.from?.username || '',
 					},
-				})
+				});
 
 				//bot.sendMessage(chatId, 'Добро пожаловать! Вы зарегистрированы.')
 			}
@@ -59,7 +60,7 @@ bot.on('message', async msg => {
 						],
 					],
 				},
-			}
+			};
 
 			bot.sendMessage(
 				chatId,
@@ -68,8 +69,8 @@ bot.on('message', async msg => {
 					reply_markup: button.reply_markup,
 					parse_mode: 'HTML',
 				}
-			)
-			return
+			);
+			return;
 		}
 
 		// Если пользователь существует и команда /start без параметра, показываем сообщение о регистрации
@@ -85,10 +86,10 @@ bot.on('message', async msg => {
 						],
 					],
 				},
-			}
+			};
 
-			bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
-			return
+			bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button);
+			return;
 		}
 
 		// Если пользователя нет, создаём его и предлагаем выбрать тип профиля
@@ -100,7 +101,7 @@ bot.on('message', async msg => {
 				chatId: chatId.toString(),
 				username: msg.from?.username || '',
 			},
-		})
+		});
 
 		// Приветственное сообщение с выбором типа профиля
 		const options = {
@@ -112,16 +113,17 @@ bot.on('message', async msg => {
 					],
 				],
 			},
-		}
+		};
 
-		const photoWelcome = `${webAppUrl}/11.png`
+		const photoWelcome = `${webAppUrl}/11.png`;
 
 		bot.sendPhoto(chatId, photoWelcome, {
 			caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
 			reply_markup: options.reply_markup,
-		})
+		});
 	}
-})
+});
+
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
 bot.on('callback_query', async callbackQuery => {
