@@ -13,11 +13,6 @@ const bot = new TelegramBot(TOKEN);
 const botUsername = 'naznach_twa_bot';
 const webAppUrl = 'https://naznach.vercel.app';
 
-// Пример обработки команды /start
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Привет! Я бот, и я работаю!');
-});
 
 // Функция для регистрации нового пользователя
 async function registerUser(chatId, msg) {
@@ -83,6 +78,12 @@ bot.on('message', async (msg) => {
     const chatId = msg.chat.id.toString();
     const text = msg.text || '';
     const startPayload = text.split(' ')[1];
+
+    // Пример обработки команды /start
+ if (text==='/start'{
+    const chatId = msg.chat.id
+    bot.sendMessage(chatId, 'Привет! Я бот, и я работаю!');
+});
 
     if (!msg.text.startsWith('/start')) {
         return; // Игнорируем сообщения, если они не начинаются с /start
