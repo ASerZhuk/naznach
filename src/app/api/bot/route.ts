@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import TelegramBot, { Message } from 'node-telegram-bot-api'
 
 const prisma = new PrismaClient()
-
-const TelegramBot = require('node-telegram-bot-api')
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
@@ -13,7 +12,7 @@ const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
 
 // Основная логика обработки сообщений
-bot.on('message', async msg => {
+bot.on('message', async (msg: Message) => {
 	const chatId = msg.chat.id.toString()
 	const text = msg.text || ''
 	const startPayload = text.split(' ')[1]
