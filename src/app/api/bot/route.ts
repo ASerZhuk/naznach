@@ -26,8 +26,8 @@ bot.onText(/\/start/, async msg => {
 		where: { telegramId: id },
 	})
 	if (user) {
-		bot.sendMessage(chatId, 'Вы зарегистрированы')
-	} else bot.sendMessage(chatId, 'Вы не зарегестрированы')
+		await bot.sendMessage(chatId, 'Вы зарегистрированы')
+	} else await bot.sendMessage(chatId, 'Вы не зарегестрированы')
 })
 
 // Обработка нажатия на инлайн-кнопки выбора типа профиля
