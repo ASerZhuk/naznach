@@ -15,12 +15,11 @@ bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 // Основная логика обработки сообщений
 bot.onText(/\/start/, async msg => {
 	const chatId = msg.chat.id
-	const text = msg.text || ''
-	const startPayload = text.split(' ')[1] || '' // Добавлено значение по умолчанию
-
 	const id = chatId.toString()
 
 	try {
+		await bot.sendMessage(chatId, 'Проверка связи!') // Проверяем, получает ли бот команду и отправляет ли ответ
+
 		const user = await prisma.user.findUnique({
 			where: { telegramId: id },
 		})
