@@ -19,7 +19,7 @@ const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
 
 // Основная логика обработки сообщений
-bot.on('message', async (msg: Message) => {
+bot.on('message', async msg => {
 	console.log('Received message:', msg);
 	const chatId = msg.chat.id.toString()
 	const text = msg.text || ''
