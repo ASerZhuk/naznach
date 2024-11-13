@@ -6,6 +6,10 @@ const prisma = new PrismaClient()
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
+if (!TOKEN) {
+    throw new Error("TELEGRAM_BOT_TOKEN is not defined. Please set it in the environment variables.");
+}
+
 const bot = new TelegramBot(TOKEN)
 
 const botUsername = 'naznach_twa_bot'
