@@ -16,13 +16,8 @@ bot.onText(/\/start/, async msg => {
 	const id = chatId.toString()
 
 	try {
-		await bot.sendMessage(chatId, 'Проверка связи!') // Проверка получения команды
+		await bot.sendMessage(chatId, 'Проверка связи!') // Проверяем, получает ли бот команду и отправляет ли ответ
 
-		// Проверка подключения к базе данных
-		const users = await prisma.user.findMany() // Тестовый запрос для получения всех пользователей
-		console.log('Пользователи в базе данных:', users)
-
-		// Проверка существования пользователя с данным telegramId
 		const user = await prisma.user.findUnique({
 			where: { telegramId: id },
 		})
