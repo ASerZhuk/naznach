@@ -12,15 +12,7 @@ const webAppUrl = 'https://naznach.vercel.app'
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
-export default async function handler(
-	req: NextApiRequest,
-	res: NextApiResponse
-) {
-	if (req.method !== 'POST') {
-		res.setHeader('Allow', ['POST'])
-		return res.status(405).end('Method Not Allowed')
-	}
-
+export default async function POST(req: NextApiRequest, res: NextApiResponse) {
 	try {
 		const { message, callback_query } = req.body
 
