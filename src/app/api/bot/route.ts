@@ -14,102 +14,117 @@ bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 // Основная логика обработки сообщений
 export async function POST(req: Request) {
 	try {
-		const body = await req.json() // Парсим тело запроса
+		const body = await req.json()
 		const { message, callback_query } = body
 
 		if (message) {
 			const chatId = message.chat.id.toString()
-			const text = message.text
-			const username = message.chat.username || ''
-			const userId = message.from.id.toString()
+			const text = message.text || ''
+			const startPayload = text.split(' ')[1] || null
 
-			if (text.startsWith('/start')) {
-				const startPayload = text.split(' ')[1] || null
-				let user = await prisma.user.findUnique({
-					where: { telegramId: userId },
+			// Проверяем, есть ли пользователь в базе данных
+			let user = await prisma.user.findUnique({
+				where: { telegramId: chatId },
+			})
+
+			if (startPayload) {
+				let master = await prisma.specialist.findUnique({
+					where: { userId: startPayload },
 				})
 
 				if (!user) {
-					// Создание нового пользователя
+					// Создаем нового пользователя
 					user = await prisma.user.create({
 						data: {
-							telegramId: userId,
-							firstName: message.chat.first_name || '',
-							lastName: message.chat.last_name || '',
-							username,
-							chatId,
-							isMaster: false,
+							telegramId: chatId,
+							firstName: message.from?.first_name || '',
+							lastName: message.from?.last_name || '',
+							chatId: chatId.toString(),
+							username: message.from?.username || '',
 						},
 					})
 				}
 
-				if (startPayload) {
-					const master = await prisma.specialist.findUnique({
-						where: { userId: startPayload },
-					})
-
-					if (master) {
-						const bookButton = [
-							[
-								{
-									text: 'Записаться',
-									web_app: {
-										url: `${webAppUrl}/profile_zapis/${startPayload}`,
+				if (master) {
+					// Кнопка записи к мастеру
+					const button = {
+						reply_markup: {
+							inline_keyboard: [
+								[
+									{
+										text: 'Записаться к мастеру',
+										web_app: {
+											url: `${webAppUrl}/profile_zapis/${startPayload}`,
+										},
 									},
-								},
+								],
 							],
-						]
-
-						await bot.sendMessage(
-							chatId,
-							`Добро пожаловать! Вы можете записаться к специалисту ${master.firstName} ${master.lastName}.`,
-							{
-								reply_markup: { inline_keyboard: bookButton },
-							}
-						)
-					} else {
-						await bot.sendMessage(chatId, 'Такого мастера не найдено.')
+						},
 					}
+
+					await bot.sendMessage(
+						chatId,
+						`Записаться к мастеру <b>${master.firstName} ${master.lastName}</b>`,
+						{
+							reply_markup: button.reply_markup,
+							parse_mode: 'HTML',
+						}
+					)
 				} else {
-					if (user.isMaster) {
-						const profileButton = [
-							[
-								{
-									text: 'Перейти в профиль',
-									web_app: {
-										url: `${webAppUrl}/profile/${username}`,
-									},
-								},
-							],
-						]
-
-						await bot.sendMessage(
-							chatId,
-							'Добро пожаловать обратно! Вы уже зарегистрированы как специалист.',
-							{
-								reply_markup: { inline_keyboard: profileButton },
-							}
-						)
-					} else {
-						const inlineKeyboard = [
-							[
-								{
-									text: 'Зарегистрироваться как специалист',
-									callback_data: 'register_master',
-								},
-							],
-						]
-
-						await bot.sendMessage(
-							chatId,
-							'🎉 Добро пожаловать! Зарегистрируйтесь как специалист или продолжите как пользователь.',
-							{
-								reply_markup: { inline_keyboard: inlineKeyboard },
-							}
-						)
-					}
+					await bot.sendMessage(chatId, 'Мастер не найден.')
 				}
+
+				return
 			}
+
+			// Если пользователь существует и команда /start без параметра
+			if (user) {
+				const button = {
+					reply_markup: {
+						inline_keyboard: [
+							[
+								{
+									text: 'Перейти в приложение',
+									web_app: { url: `${webAppUrl}` },
+								},
+							],
+						],
+					},
+				}
+
+				await bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
+				return
+			}
+
+			// Если пользователь новый и команда /start без параметра
+			user = await prisma.user.create({
+				data: {
+					telegramId: chatId,
+					firstName: message.from?.first_name || '',
+					lastName: message.from?.last_name || '',
+					chatId: chatId.toString(),
+					username: message.from?.username || '',
+				},
+			})
+
+			// Приветственное сообщение с выбором типа профиля
+			const options = {
+				reply_markup: {
+					inline_keyboard: [
+						[
+							{ text: 'Клиент', callback_data: 'client' },
+							{ text: 'Специалист', callback_data: 'specialist' },
+						],
+					],
+				},
+			}
+
+			const photoWelcome = `${webAppUrl}/11.png`
+
+			await bot.sendPhoto(chatId, photoWelcome, {
+				caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
+				reply_markup: options.reply_markup,
+			})
 		}
 
 		if (callback_query) {
@@ -117,7 +132,26 @@ export async function POST(req: Request) {
 			const userId = callback_query.from.id.toString()
 			const username = callback_query.from.username || ''
 
-			if (callback_query.data === 'register_master') {
+			if (callback_query.data === 'client') {
+				await bot.sendMessage(
+					chatId,
+					'Вы зарегистрированы как клиент. Перейдите в приложение для записи.',
+					{
+						reply_markup: {
+							inline_keyboard: [
+								[
+									{
+										text: 'Перейти в приложение',
+										web_app: { url: `${webAppUrl}` },
+									},
+								],
+							],
+						},
+					}
+				)
+			}
+
+			if (callback_query.data === 'specialist') {
 				let master = await prisma.specialist.findUnique({
 					where: { userId },
 				})
@@ -150,9 +184,7 @@ export async function POST(req: Request) {
 						[
 							{
 								text: 'Перейти в профиль',
-								web_app: {
-									url: `${webAppUrl}/profile/${username}`,
-								},
+								web_app: { url: `${webAppUrl}/profile/${username}` },
 							},
 						],
 					]
