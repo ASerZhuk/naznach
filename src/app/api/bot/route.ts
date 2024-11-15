@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
 import TelegramBot from 'node-telegram-bot-api'
 import prisma from '@/app/libs/prismadb'
-import { NextApiRequest, NextApiResponse } from 'next'
 
 const bot = new TelegramBot('7655736393:AAGYAPPjBo1WWKhAXtcUMj0FsTWH35Y7D8g')
-
 const botUsername = 'naznach_twa_bot'
 const webAppUrl = 'https://naznach.vercel.app'
 
 // Устанавливаем вебхук на этот маршрут
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
-// Основная логика обработки сообщений
 export async function POST(req: Request) {
 	try {
 		const body = await req.json()
@@ -29,7 +26,7 @@ export async function POST(req: Request) {
 
 			if (startPayload) {
 				// Если передан payload, ищем мастера
-				let master = await prisma.specialist.findUnique({
+				const master = await prisma.specialist.findUnique({
 					where: { userId: startPayload },
 				})
 
@@ -40,14 +37,13 @@ export async function POST(req: Request) {
 							telegramId: chatId,
 							firstName: message.from?.first_name || '',
 							lastName: message.from?.last_name || '',
-							chatId: chatId.toString(),
+							chatId,
 							username: message.from?.username || '',
 						},
 					})
 				}
 
 				if (master) {
-					// Отправляем кнопку для записи к мастеру
 					const button = {
 						reply_markup: {
 							inline_keyboard: [
@@ -66,19 +62,15 @@ export async function POST(req: Request) {
 					await bot.sendMessage(
 						chatId,
 						`Записаться к мастеру <b>${master.firstName} ${master.lastName}</b>`,
-						{
-							reply_markup: button.reply_markup,
-							parse_mode: 'HTML',
-						}
+						{ reply_markup: button.reply_markup, parse_mode: 'HTML' }
 					)
 				} else {
 					await bot.sendMessage(chatId, 'Мастер не найден.')
 				}
 
-				return
+				return NextResponse.json({ success: true })
 			}
 
-			// Если пользователь существует, отправляем приветственное сообщение
 			if (user) {
 				const button = {
 					reply_markup: {
@@ -94,7 +86,7 @@ export async function POST(req: Request) {
 				}
 
 				await bot.sendMessage(chatId, 'Вы уже зарегистрированы.', button)
-				return
+				return NextResponse.json({ success: true })
 			}
 
 			// Если пользователь новый, создаём его
@@ -103,12 +95,11 @@ export async function POST(req: Request) {
 					telegramId: chatId,
 					firstName: message.from?.first_name || '',
 					lastName: message.from?.last_name || '',
-					chatId: chatId.toString(),
+					chatId,
 					username: message.from?.username || '',
 				},
 			})
 
-			// Приветственное сообщение с выбором типа профиля
 			const options = {
 				reply_markup: {
 					inline_keyboard: [
@@ -126,16 +117,23 @@ export async function POST(req: Request) {
 				caption: `👋 Добро пожаловать! Пожалуйста, выберите тип профиля, чтобы продолжить:`,
 				reply_markup: options.reply_markup,
 			})
+
+			return NextResponse.json({ success: true })
 		}
 
 		if (callback_query) {
 			const chatId = callback_query.message?.chat.id.toString()
 			const telegramId = callback_query.from.id.toString()
 
-			if (!chatId) return
+			if (!chatId) {
+				return NextResponse.json(
+					{ error: 'chatId is missing' },
+					{ status: 400 }
+				)
+			}
 
 			const user = await prisma.user.findUnique({
-				where: { telegramId: telegramId },
+				where: { telegramId },
 			})
 
 			if (!user) {
@@ -143,10 +141,9 @@ export async function POST(req: Request) {
 					chatId,
 					'Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.'
 				)
-				return
+				return NextResponse.json({ error: 'User not found' }, { status: 400 })
 			}
 
-			// Обработка выбора профиля "Клиент"
 			if (callback_query.data === 'client') {
 				const profileOptions = {
 					reply_markup: {
@@ -168,18 +165,17 @@ export async function POST(req: Request) {
 				})
 			}
 
-			// Обработка выбора профиля "Специалист"
 			if (callback_query.data === 'specialist') {
 				try {
 					await prisma.user.update({
-						where: { telegramId: telegramId },
+						where: { telegramId },
 						data: { isMaster: true },
 					})
 
 					await prisma.specialist.create({
 						data: {
 							userId: user.telegramId,
-							chatId: chatId.toString(),
+							chatId,
 							firstName: user.firstName,
 							lastName: user.lastName,
 							username: user.username,
@@ -214,9 +210,14 @@ export async function POST(req: Request) {
 					)
 				}
 			}
+
+			return NextResponse.json({ success: true })
 		}
 
-		return NextResponse.json({ success: true })
+		return NextResponse.json(
+			{ message: 'No relevant data in request' },
+			{ status: 400 }
+		)
 	} catch (error) {
 		console.error('Произошла ошибка:', error)
 		return NextResponse.json({ error }, { status: 500 })
