@@ -28,6 +28,7 @@ export async function POST(req: Request) {
 			})
 
 			if (startPayload) {
+				// Если передан payload, ищем мастера
 				let master = await prisma.specialist.findUnique({
 					where: { userId: startPayload },
 				})
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
 				}
 
 				if (master) {
-					// Кнопка записи к мастеру
+					// Отправляем кнопку для записи к мастеру
 					const button = {
 						reply_markup: {
 							inline_keyboard: [
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
 				return
 			}
 
-			// Если пользователь существует и команда /start без параметра
+			// Если пользователь существует, отправляем приветственное сообщение
 			if (user) {
 				const button = {
 					reply_markup: {
@@ -96,7 +97,7 @@ export async function POST(req: Request) {
 				return
 			}
 
-			// Если пользователь новый и команда /start без параметра
+			// Если пользователь новый, создаём его
 			user = await prisma.user.create({
 				data: {
 					telegramId: chatId,
@@ -122,21 +123,71 @@ export async function POST(req: Request) {
 			const photoWelcome = `${webAppUrl}/11.png`
 
 			await bot.sendPhoto(chatId, photoWelcome, {
-				caption: `👋 Добро пожаловать! Мы рады видеть вас в нашем приложении для онлайн записи. Пожалуйста, выберите тип профиля, чтобы продолжить:`,
+				caption: `👋 Добро пожаловать! Пожалуйста, выберите тип профиля, чтобы продолжить:`,
 				reply_markup: options.reply_markup,
 			})
 		}
 
 		if (callback_query) {
-			const chatId = callback_query.message.chat.id.toString()
-			const userId = callback_query.from.id.toString()
-			const username = callback_query.from.username || ''
+			const chatId = callback_query.message?.chat.id.toString()
+			const telegramId = callback_query.from.id.toString()
 
-			if (callback_query.data === 'client') {
+			if (!chatId) return
+
+			const user = await prisma.user.findUnique({
+				where: { telegramId: telegramId },
+			})
+
+			if (!user) {
 				await bot.sendMessage(
 					chatId,
-					'Вы зарегистрированы как клиент. Перейдите в приложение для записи.',
-					{
+					'Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.'
+				)
+				return
+			}
+
+			// Обработка выбора профиля "Клиент"
+			if (callback_query.data === 'client') {
+				const profileOptions = {
+					reply_markup: {
+						inline_keyboard: [
+							[
+								{
+									text: 'Перейти в приложение',
+									web_app: { url: `${webAppUrl}` },
+								},
+							],
+						],
+					},
+				}
+				const photoProfile = `${webAppUrl}/33.png`
+
+				await bot.sendPhoto(chatId, photoProfile, {
+					caption: 'Вы выбрали профиль клиента.',
+					reply_markup: profileOptions.reply_markup,
+				})
+			}
+
+			// Обработка выбора профиля "Специалист"
+			if (callback_query.data === 'specialist') {
+				try {
+					await prisma.user.update({
+						where: { telegramId: telegramId },
+						data: { isMaster: true },
+					})
+
+					await prisma.specialist.create({
+						data: {
+							userId: user.telegramId,
+							chatId: chatId.toString(),
+							firstName: user.firstName,
+							lastName: user.lastName,
+							username: user.username,
+							isMaster: true,
+						},
+					})
+
+					const profileOptions = {
 						reply_markup: {
 							inline_keyboard: [
 								[
@@ -148,58 +199,18 @@ export async function POST(req: Request) {
 							],
 						},
 					}
-				)
-			}
 
-			if (callback_query.data === 'specialist') {
-				let master = await prisma.specialist.findUnique({
-					where: { userId },
-				})
+					const photoProfile = `${webAppUrl}/22.png`
 
-				if (!master) {
-					await prisma.specialist.create({
-						data: {
-							userId,
-							chatId,
-							firstName: callback_query.from.first_name || '',
-							lastName: callback_query.from.last_name || '',
-							username,
-							isMaster: true,
-						},
+					await bot.sendPhoto(chatId, photoProfile, {
+						caption: `Вы специалист. Ваша ссылка: https://t.me/${botUsername}?start=${chatId}`,
+						reply_markup: profileOptions.reply_markup,
 					})
-
-					await prisma.user.update({
-						where: { telegramId: userId },
-						data: { isMaster: true },
-					})
-
-					const profileUrl = `https://t.me/${botUsername}?start=${username}`
-
+				} catch (error) {
+					console.error('Ошибка при регистрации специалиста:', error)
 					await bot.sendMessage(
 						chatId,
-						`Вы успешно зарегистрированы как специалист! Ваша уникальная ссылка: ${profileUrl}`
-					)
-
-					const profileButton = [
-						[
-							{
-								text: 'Перейти в профиль',
-								web_app: { url: `${webAppUrl}/profile/${username}` },
-							},
-						],
-					]
-
-					await bot.sendMessage(
-						chatId,
-						'Вы можете перейти в свой профиль для редактирования информации.',
-						{
-							reply_markup: { inline_keyboard: profileButton },
-						}
-					)
-				} else {
-					await bot.sendMessage(
-						chatId,
-						'Вы уже зарегистрированы как специалист.'
+						'Произошла ошибка при регистрации. Попробуйте еще раз.'
 					)
 				}
 			}
