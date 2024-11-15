@@ -12,9 +12,10 @@ const webAppUrl = 'https://naznach.vercel.app'
 bot.setWebHook(`https://naznach.vercel.app/api/bot`)
 
 // Основная логика обработки сообщений
-export async function POST(req: NextApiRequest, res: NextApiResponse) {
+export async function POST(req: Request) {
 	try {
-		const { message, callback_query } = req.body
+		const body = await req.json() // Парсим тело запроса
+		const { message, callback_query } = body
 
 		if (message) {
 			const chatId = message.chat.id.toString()
@@ -172,9 +173,9 @@ export async function POST(req: NextApiRequest, res: NextApiResponse) {
 			}
 		}
 
-		res.status(200).end()
+		return NextResponse.json({ success: true })
 	} catch (error) {
 		console.error('Произошла ошибка:', error)
-		res.status(500).json({ error: 'Произошла ошибка' })
+		return NextResponse.json({ error }, { status: 500 })
 	}
 }
