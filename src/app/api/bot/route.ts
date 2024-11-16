@@ -106,6 +106,10 @@ export async function POST(req: Request) {
 						[
 							{ text: 'Клиент', callback_data: 'client' },
 							{ text: 'Специалист', callback_data: 'specialist' },
+							{
+								text: 'Инструкция',
+								url: `https://teletype.in/@naznach/6B0k92xeYUm`,
+							},
 						],
 					],
 				},
@@ -153,6 +157,10 @@ export async function POST(req: Request) {
 									text: 'Перейти в приложение',
 									web_app: { url: `${webAppUrl}` },
 								},
+								{
+									text: 'Инструкция',
+									url: `https://teletype.in/@naznach/6B0k92xeYUm`,
+								},
 							],
 						],
 					},
@@ -191,6 +199,10 @@ export async function POST(req: Request) {
 									{
 										text: 'Перейти в приложение',
 										web_app: { url: `${webAppUrl}` },
+									},
+									{
+										text: 'Инструкция',
+										url: `https://teletype.in/@naznach/6B0k92xeYUm`,
 									},
 								],
 							],
